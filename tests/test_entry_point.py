@@ -15,14 +15,14 @@
 
 from importlib.metadata import entry_points
 
-from neon_inference_plugin_history import RequestHistoryStep
+from brainforge_inference_plugin_history import RequestHistoryStep
 
 def test_entry_point_loads_history_step():
     matches = [
         ep for ep in entry_points(group="brainforge.inference.request_steps")
-        if ep.name == "neon.history"
+        if ep.name == "brainforge.history"
     ]
     assert len(matches) == 1
     loaded = matches[0].load()
     assert loaded is RequestHistoryStep
-    assert loaded.id == "neon.history"
+    assert loaded.id == "brainforge.history"
