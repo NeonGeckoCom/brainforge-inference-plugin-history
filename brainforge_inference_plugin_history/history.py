@@ -36,7 +36,7 @@ from neon_data_models.types import LlmMessageRole
 from brainforge_inference_utils.steps.base import RequestStep, RequestContextOption
 from brainforge_inference_utils.transaction import UserTransaction
 
-# Matches `[[n](url)]` written by the citation step in neon-inference-plugin-rag.
+# Matches `[[n](url)]` written by the citation step in brainforge-inference-plugin-rag.
 _CITATION_MARKUP = re.compile(r"\[\[\d+\]\([^\)]*\)\]")
 
 _CONTEXT_ROLES = {"information", "instruction", "tool"}
@@ -67,7 +67,7 @@ class RequestHistoryStep(RequestStep):
       Defaults to true.
     """
 
-    id = "neon.history"
+    id = "brainforge.history"
     request_context_options = (
         RequestContextOption(
             "conversational",

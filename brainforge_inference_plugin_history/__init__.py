@@ -15,11 +15,11 @@
 
 """Request history step for BrainForge inference pipelines."""
 
-from neon_inference_plugin_history.history import (
+from brainforge_inference_plugin_history.history import (
     RequestHistoryStep,
     remove_citation_strings,
 )
-from neon_inference_plugin_history.version import __version__
+from brainforge_inference_plugin_history.version import __version__
 
 __all__ = [
     "RequestHistoryStep",

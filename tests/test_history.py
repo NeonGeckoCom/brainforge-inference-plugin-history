@@ -15,7 +15,7 @@
 
 import unittest
 
-from neon_inference_plugin_history import RequestHistoryStep
+from brainforge_inference_plugin_history import RequestHistoryStep
 from brainforge_inference_utils.transaction import UserTransaction
 from helpers import make_request
 
@@ -45,9 +45,9 @@ class TestRequestHistoryStep(unittest.IsolatedAsyncioTestCase):
         ])
         self.assertEqual(transaction.request.max_history, 2)
         self.assertEqual(
-            transaction.request_step_context["neon.history"]["dropped_turns"], 2)
+            transaction.request_step_context["brainforge.history"]["dropped_turns"], 2)
         self.assertEqual(
-            transaction.request_step_context["neon.history"]["kept_turns"], 4)
+            transaction.request_step_context["brainforge.history"]["kept_turns"], 4)
 
     async def test_preserves_context_messages_outside_the_window(self):
         step = RequestHistoryStep({"max_history": 2})
@@ -87,7 +87,7 @@ class TestRequestHistoryStep(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(transaction.request.history, [("information", "rag")])
         self.assertEqual(transaction.request.max_history, 0)
-        ctx = transaction.request_step_context["neon.history"]
+        ctx = transaction.request_step_context["brainforge.history"]
         self.assertFalse(ctx["conversational"])
         self.assertEqual(ctx["dropped_turns"], 4)
 
@@ -100,7 +100,7 @@ class TestRequestHistoryStep(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(transaction.request.history, history)
         self.assertEqual(
-            transaction.request_step_context["neon.history"]["dropped_turns"], 0)
+            transaction.request_step_context["brainforge.history"]["dropped_turns"], 0)
 
     async def test_drops_system_empty_and_duplicate_query(self):
         step = RequestHistoryStep({"max_history": 2})
