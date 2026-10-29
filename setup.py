@@ -52,7 +52,7 @@ with open(path.join(BASE_PATH, "README.md"), "r") as f:
     long_description = f.read()
 
 with open(
-    path.join(BASE_PATH, "neon_inference_plugin_history", "version.py"),
+    path.join(BASE_PATH, "brainforge_inference_plugin_history", "version.py"),
     "r",
     encoding="utf-8",
 ) as v:
@@ -65,12 +65,12 @@ with open(
 
 
 setup(
-    name="neon-inference-plugin-history",
+    name="brainforge-inference-plugin-history",
     version=version,
     description="Request history step for BrainForge inference pipelines",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/NeonGeckoCom/neon-inference-plugin-history",
+    url="https://github.com/NeonGeckoCom/brainforge-inference-plugin-history",
     author="NeonGecko",
     author_email="developers@neon.ai",
     license="AGPL-3.0-only",
@@ -87,7 +87,7 @@ setup(
     ],
     entry_points={
         "brainforge.inference.request_steps": [
-            "neon.history = neon_inference_plugin_history:RequestHistoryStep",
+            "brainforge.history = brainforge_inference_plugin_history:RequestHistoryStep",
         ],
     },
 )

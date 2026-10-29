@@ -13,4 +13,16 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = "0.0.1a0"
+"""Request history step for BrainForge inference pipelines."""
+
+from brainforge_inference_plugin_history.history import (
+    RequestHistoryStep,
+    remove_citation_strings,
+)
+from brainforge_inference_plugin_history.version import __version__
+
+__all__ = [
+    "RequestHistoryStep",
+    "remove_citation_strings",
+    "__version__",
+]

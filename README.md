@@ -1,4 +1,4 @@
-# Neon Inference Plugin: History
+# BrainForge Inference Plugin: History
 
 Request step that validates and truncates `LLMRequest.history` after earlier
 request steps have prepended context. It repairs history rather than skipping:
@@ -9,13 +9,13 @@ Entry point group: `brainforge.inference.request_steps`
 
 | Step id | Class |
 | --- | --- |
-| `neon.history` | `RequestHistoryStep` |
+| `brainforge.history` | `RequestHistoryStep` |
 
 ```yaml
 pipeline:
   request:
-    - id: neon.history
+    - id: brainforge.history
 ```
 
 Run this step last on the request pipeline. It writes
-`transaction.request_step_context["neon.history"]`.
+`transaction.request_step_context["brainforge.history"]`.
