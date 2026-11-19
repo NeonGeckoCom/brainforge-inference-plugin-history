@@ -183,3 +183,35 @@ class TestRequestHistoryStep(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(options), 1)
         self.assertEqual(options[0].key, "conversational")
         self.assertEqual(list(options[0].values), [True, False])
+
+    async def test_window_retains_deep_history_on_exact_fit(self):
+        pairs = [("user", "q"), ("llm", "a")] * 64
+        for window, expected in ((709, 64), (708, 63)):
+            with self.subTest(window=window):
+                tx = UserTransaction(request=make_request(
+                    query="?", max_tokens=64, history=pairs))
+                await RequestHistoryStep({"max_tokens": window}).process(tx)
+                self.assertEqual(tx.request.max_history, expected)
+                self.assertEqual(tx.request.history, pairs[-2 * expected:])
+
+    async def test_context_and_generation_reservation_take_priority(self):
+        context = [("information", "éé"), ("tool", "x")]
+        pair = [("user", "q"), ("llm", "a")]
+        for window, expected, overflow in (
+                (158, pair, False), (157, [], False), (147, [], True)):
+            with self.subTest(window=window):
+                request = make_request(
+                    query="?", history=context + pair, max_tokens=64,
+                    persona={"name": "custom", "system_prompt": "abcd"})
+                request.extra_body["max_new_tokens"] = 128
+                tx = UserTransaction(request=request)
+                await RequestHistoryStep({"max_tokens": window}).process(tx)
+                self.assertEqual(tx.request.history, context + expected)
+                self.assertEqual(tx.request_step_context["brainforge.history"][
+                    "context_budget_exceeded"], overflow)
+
+    async def test_window_respects_explicit_request_pair_limit(self):
+        pairs = [("user", "q"), ("llm", "a")] * 5
+        tx = UserTransaction(request=make_request(history=pairs, max_history=1))
+        await RequestHistoryStep({"max_tokens": 4096}).process(tx)
+        self.assertEqual(tx.request.history, pairs[-2:])

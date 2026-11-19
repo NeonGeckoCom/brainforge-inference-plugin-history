@@ -49,6 +49,11 @@ def remove_citation_strings(text: str) -> str:
     return _CITATION_MARKUP.sub("", text)
 
 
+def approximate_message_tokens(content: str) -> int:
+    """Estimate four UTF-8 bytes per token plus four tokens for chat framing."""
+    return 4 + (len(content.encode("utf-8")) + 3) // 4
+
+
 class RequestHistoryStep(RequestStep):
     """
     Normalize, truncate, and order `request.history` into a valid LLM history.
@@ -82,17 +87,39 @@ class RequestHistoryStep(RequestStep):
     async def process(self, transaction: UserTransaction) -> None:
         conversational = bool(
             transaction.request_context.get("conversational", True))
+        request = transaction.request
+        window = self.config.get("max_tokens")
+        if window is not None and (type(window) is not int or window <= 0):
+            raise ValueError("history max_tokens must be a positive integer")
         max_history = self._pair_budget(transaction, conversational)
 
         cleaned = self._clean_messages(
             transaction.request.history, transaction.request.query)
         context_messages, turn_messages = self._split_history(cleaned)
-        windowed_turns = self._last_complete_pairs(turn_messages, max_history)
+        remaining = None
+        diagnostics = {}
+        if window is not None:
+            output = request.extra_body.get("max_new_tokens", request.max_tokens)
+            if type(output) is not int or output < 0:
+                raise ValueError("max_new_tokens must be a non-negative integer")
+            reserved = max(request.max_tokens, output)
+            fixed = approximate_message_tokens(request.query)
+            if request.persona.system_prompt:
+                fixed += approximate_message_tokens(request.persona.system_prompt)
+            fixed += sum(approximate_message_tokens(text) for _, text in context_messages)
+            remaining = window - reserved - fixed
+            diagnostics = {"context_limit": window, "reserved_output_tokens": reserved,
+                           "estimated_fixed_input_tokens": fixed,
+                           "context_budget_exceeded": remaining < 0}
+        windowed_turns = self._last_complete_pairs(turn_messages, max_history, remaining)
+        if window is not None:
+            max_history = len(windowed_turns) // 2
         dropped_turns = len(turn_messages) - len(windowed_turns)
 
         transaction.request.history = list(context_messages) + list(windowed_turns)
         transaction.request.max_history = max_history
         transaction.request_step_context[self.id] = {
+            **diagnostics,
             "conversational": conversational,
             "max_history": max_history,
             "kept_turns": len(windowed_turns),
@@ -108,6 +135,9 @@ class RequestHistoryStep(RequestStep):
             return max(0, (max_messages - 1) // 2)
         if self.config.get("max_history") not in (None, ""):
             return max(0, int(self.config["max_history"]))
+        if (self.config.get("max_tokens") is not None
+                and "max_history" not in transaction.request.model_fields_set):
+            return len(transaction.request.history) // 2
         return max(0, int(transaction.request.max_history))
 
     @staticmethod
@@ -156,6 +186,7 @@ class RequestHistoryStep(RequestStep):
     def _last_complete_pairs(
         turns: Sequence[HistoryItem],
         max_history: int,
+        remaining: Optional[int] = None,
     ) -> List[HistoryItem]:
         if max_history <= 0 or not turns:
             return []
@@ -165,6 +196,11 @@ class RequestHistoryStep(RequestStep):
             later = turns[idx]
             earlier = turns[idx - 1]
             if later[0] == "llm" and earlier[0] == "user":
+                if remaining is not None:
+                    cost = approximate_message_tokens(earlier[1]) + approximate_message_tokens(later[1])
+                    if cost > remaining:
+                        break
+                    remaining -= cost
                 pairs.append((earlier, later))
                 idx -= 2
             else:
